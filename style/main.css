@@ -1,0 +1,269 @@
+/* roboto-300 - latin */
+@font-face {
+    font-display: swap;
+    /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 300;
+    src: url('../fonts/roboto-v32-latin-300.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* roboto-regular - latin */
+@font-face {
+    font-display: swap;
+    /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 400;
+    src: url('../fonts/roboto-v32-latin-regular.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* roboto-500 - latin */
+@font-face {
+    font-display: swap;
+    /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    src: url('../fonts/roboto-v32-latin-500.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* roboto-900 - latin */
+@font-face {
+    font-display: swap;
+    /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 900;
+    src: url('../fonts/roboto-v32-latin-900.woff2') format('woff2');
+    /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+body {
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+a, a:visited, a:hover, a:link {
+    color: #fff;
+}
+
+.content {
+    padding: 50px;
+    position: relative;
+}
+
+.content h1 {
+    margin: 0 0 25px 0;
+}
+
+.background-image {
+    height: 100vh;
+    position: fixed;
+    width: 100vw;
+}
+
+.background-image .overlay {
+    background-color: rgba(0, 0, 0, .75);
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
+.background-image img {
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+}
+
+#table-effects,
+#table-matches {
+    border-collapse: collapse;
+    margin-bottom: 50px;
+}
+
+#table-effects td:not(:first-child) {
+    background-color: rgba(100,100,100,0.4);
+}
+
+/* TODO: cursor pointer is not working, propably wrong classes */
+#table-effects.highlight-td td:not(:first-child),
+#table-effects th.object {
+    cursor: pointer;
+}
+
+#table-effects th, #table-effects td:first-child {
+    background-color: rgba(0, 0, 0, .75);
+    font-weight: 500;
+}
+
+#table-effects th,
+#table-effects td {
+    border: 1px solid #fff;
+    font-size: 20px;
+    padding: 15px;
+}
+
+#table-effects tr.highlighted-row--first th,
+#table-effects tr.highlighted-row--first td {
+    background-color: rgba(0,128,44, .4);
+}
+
+#table-effects tr.highlighted-row.highlighted-row--first td.highlighted-effect.highlighted-effect--first {
+    background-color: rgba(0,128,44,.8);
+}
+
+#table-effects tr.highlighted-row--second th,
+#table-effects tr.highlighted-row--second td {
+    background-color: rgba(70,130,180, .4);
+}
+
+#table-effects tr.highlighted-row.highlighted-row--second td.highlighted-effect.highlighted-effect--second {
+    background-color: rgba(70,130,180, .8);
+}
+
+#table-effects tr.highlighted-row--third th,
+#table-effects tr.highlighted-row--third td {
+    background-color: rgba(128,0,0, .4);
+}
+
+#table-effects tr.highlighted-row.highlighted-row--third td.highlighted-effect.highlighted-effect--third {
+    background-color:  rgba(128,0,0, .8);
+}
+
+#table-effects tr.highlighted-row--first.highlighted-row--second:not(.highlighted-row--third) th,
+#table-effects tr.highlighted-row--first.highlighted-row--second:not(.highlighted-row--third) td,
+#table-effects tr.highlighted-row--first.highlighted-row--third:not(.highlighted-row--second) th,
+#table-effects tr.highlighted-row--first.highlighted-row--third:not(.highlighted-row--second) td,
+#table-effects tr.highlighted-row--second.highlighted-row--third:not(.highlighted-row--first) th,
+#table-effects tr.highlighted-row--second.highlighted-row--third:not(.highlighted-row--first) td,
+#table-effects tr.highlighted-row--first.highlighted-row--second.highlighted-row--third th,
+#table-effects tr.highlighted-row--first.highlighted-row--second.highlighted-row--third td:not(.highlighted-effect) {
+    background-color: rgba(255,165,0, .4);
+}
+
+#table-effects tr.highlighted-row--first.highlighted-row--second.highlighted-row--third {
+    border: 10px solid rgba(255, 140, 0, .5);
+    animation: glowing-border 1.5s ease-in-out infinite;
+}
+
+#table thead.sticky {
+    background-color: rgb(0, 29, 71, 1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#table thead.sticky th {
+    background-color: rgba(5,62,145,1);
+}
+
+#table   th.object.sticky {
+    background-color: rgba(5,62,145,1);
+    left: 0;
+    position: sticky;
+}
+
+#table.table.hearthfire-table {
+    border-collapse: collapse;
+}
+
+#table.table.hearthfire-table th,
+#table.table.hearthfire-table td {
+    border: 1px solid #fff;
+}
+
+#required-output {
+    width: fit-content;
+}
+
+#required-output h1 {
+    font-size: 22px;
+}
+
+#required-output th {
+    border: 1px solid #fff;
+    width: 200px;
+}
+
+#required-output td {
+    border: 1px solid #fff;
+    padding-right: 10px;
+    text-align: right;
+    width: 75px;
+}
+
+#required-table-container {
+    align-items: flex-start;
+    display: flex;
+}
+
+#required-table-container table {
+    border-collapse: collapse;
+}
+
+#required-table-container table:not(:last-child) {
+    margin-right: 30px;
+}
+
+#scroll-container {
+    overflow-x: auto;
+}
+
+#table-matches th, #table-matches td {
+    border: 1px solid #fff;
+    min-width: 200px;
+    padding: 10px 0;
+    text-align: center;
+}
+
+#table-matches td p {
+    margin: 0;
+    line-height: 20px;
+}
+
+#table-matches thead {
+    background-color: rgba(0,0,0,.75);
+    position: sticky;
+    top: 0;
+}
+
+#table-matches tbody th {
+    background-color: rgba(0,0,0,.75);
+    position: sticky;
+    left: 0;
+}
+
+#table-matches .field.highlighted {
+    background-color: rgba(0,128,44, .4);
+}
+
+#table-matches .field.highlighted.highlighted-bright {
+    background-color: rgba(0,128,44, .8);
+}
+
+@keyframes glowing-border {
+    0% {
+        border: 10px solid rgba(255, 140, 0, .5);
+    }
+
+    25% {
+        border: 10px solid rgba(255, 140, 0, 1);
+    }
+
+    75% {
+        border: 10px solid rgba(255, 140, 0, 1);
+    }
+
+    100% {
+        border: 10px solid rgba(255, 140, 0, .5);
+    }
+}

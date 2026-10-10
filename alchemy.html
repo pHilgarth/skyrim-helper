@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyrim Helper - Alchemy</title>
+    <link rel="stylesheet" href="style/main.css" />
+</head>
+
+<body>
+    <div class="background-image">
+        <div class="overlay"></div>
+        <img src="images/skyrim-helper-background.jpg" />
+    </div>
+    <div class="content">
+        <h1>Alchemy</h1>
+        <div>
+            <table id="table-effects" class="highlight-td">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Effect 1</th>
+                        <th>Effect 2</th>
+                        <th>Effect 3</th>
+                        <th>Effect 4</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- rows for ingredients will be placed here -->
+                </tbody>
+            </table>
+            <form id="matches-form">
+                <label>
+                    <input type="radio" name="matches" value="0">Show all
+                </label>
+                <label>
+                    <input type="radio" name="matches" value="1">Show 1 match
+                </label>
+                <label>
+                    <input type="radio" name="matches" value="2">Show 2 matches
+                </label>
+                <label>
+                    <input type="radio" name="matches" value="22">Show 2+ matches
+                </label>
+                <label>
+                    <input type="radio" name="matches" value="3">Show 3 matches
+                </label>
+                <label>
+                    <input type="radio" name="matches" value="33">Show 3+ matches
+                </label>
+                <label>
+                    <input type="radio" name="matches" value="4">Show 4 matches
+                </label>
+            </form>
+
+            <table id="table-matches">
+                <thead>
+                    <tr id="header-row" class="row row-0">
+                        <th class="field field-0-0"></th>
+                    </tr>
+                </thead>
+                <tbody id="body">
+                    <!-- rows for ingredients will be placed here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function loadAndParseFile(filePath) {
+            fetch(filePath)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Fehler beim Laden der Datei: ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    const rows = data.split('\n');
+                    const table = document.querySelector('#table-effects tbody');
+                    const ingredients = [];
+
+                    rows.forEach(row => {
+                        const values = row.split(',');
+                        const tr = document.createElement('tr');
+                        const ingredient = {
+                            "name": null,
+                            "effects": []
+                        };
+
+                        values.forEach(value => {
+                            let fixedValue = value.replace('\r', '').trim();
+                            const cell = values.indexOf(value) > 0 ? document.createElement('td') : document.createElement('th');
+                            cell.textContent = fixedValue;
+
+                            if (fixedValue != "" && values.indexOf(value) == 0) {
+                                ingredient.name = fixedValue;
+                                cell.classList.add(fixedValue.toLowerCase().split(' ').join('-').trim(), 'ingredient');
+                            }
+                            else if (fixedValue != "" && values.indexOf(value) > 0) {
+                                ingredient.effects.push(fixedValue);
+                                cell.classList.add(fixedValue.toLowerCase().split(' ').join('-').trim(), 'effect');
+                            }
+
+                            tr.appendChild(cell);
+                        });
+
+                        ingredients.push(ingredient);
+                        table.appendChild(tr);
+                    });
+
+                    const matches = ingredients.map((i) => {
+                        const sharedEffects = ingredients.map((j) => {
+                            if (i.name !== j.name) {
+                                const commonEffects = i.effects.filter((effect) => j.effects.includes(effect));
+
+                                return commonEffects.length > 0
+                                    ? { name: j.name, effects: commonEffects }
+                                    : null;
+
+                            }
+
+                            return null;
+                        });
+
+                        return sharedEffects
+                            ? { name: i.name, matches: sharedEffects }
+                            : null;
+                    });
+
+                    const matchesTableHeader = document.querySelector('#table-matches #header-row');
+                    matches.forEach(x => {
+                        const index = matches.indexOf(x) + 1;
+                        const thHeaderRow = document.createElement('th');
+                        thHeaderRow.classList.add('field', `field-${index}-0`);
+                        thHeaderRow.textContent = x.name;
+
+                        matchesTableHeader.appendChild(thHeaderRow)
+
+                        const tr = document.createElement('tr');
+                        tr.classList.add('row', `row-${index}`);
+                        const th = document.createElement('th');
+                        th.classList.add('field', `field-0-${index}`);
+                        th.textContent = x.name;
+                        tr.appendChild(th);
+
+                        for (let i = 0; i < x.matches.length; i++) {
+                            const match = x.matches[i];
+                            const td = document.createElement('td');
+                            td.classList.add('field', `field-${i + 1}-${index}`);
+                            let innerHtml = '';
+
+                            if (match?.effects.length > 0) {
+                                match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                            }
+
+                            td.innerHTML = innerHtml;
+                            tr.appendChild(td);
+                        }
+
+                        document.querySelector('#table-matches #body').appendChild(tr);
+                    });
+
+                    document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                        document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                        document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                        const clickedCell = x.target.closest('td');
+                        clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                        const xIndex = clickedCell.classList[1].split('-')[1];
+                        const yIndex = clickedCell.classList[1].split('-')[2];
+
+                        for (let i = xIndex - 1; i >= 0; i--) {
+                            document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                        }
+
+                        for (let i = yIndex - 1; i >= 0; i--) {
+                            document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                        }
+                    }));
+
+                    document.getElementById("matches-form").addEventListener("change", function (event) {
+                        const output = document.getElementById("output");
+
+                        matchesTableHeader.innerHTML = '';
+                        const emptyTh = document.createElement('th');
+                        emptyTh.classList.add('field', 'field-0-0');
+                        matchesTableHeader.appendChild(emptyTh);
+                        document.querySelector('#table-matches #body').innerHTML = '';
+                        let indicesToRemove = [];
+                        let manipulatedMatches = [];
+
+                        switch (event.target.value) {
+                            case "0":
+                                matches.forEach(x => {
+                                    const index = matches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+
+                                break;
+                            case "1":
+                                indicesToRemove = [];
+
+                                manipulatedMatches = matches.map(x => {
+                                    const oneMatches = x.matches.map(y => {
+                                        if (y == null || y.effects.length != 1) {
+                                            return null;
+                                        }
+                                        else {
+                                            return {
+                                                effects: Array.from(y.effects),
+                                                name: y.name
+                                            }
+                                        }
+                                    });
+
+                                    if (oneMatches.some(x => x != null)) {
+                                        return {
+                                            name: x.name,
+                                            matches: oneMatches
+                                        };
+                                    }
+                                    else {
+                                        indicesToRemove.push(matches.indexOf(x));
+                                        return null;
+                                    }
+                                }).filter(x => x != null);
+
+                                indicesToRemove.reverse().forEach(x => {
+                                    manipulatedMatches.forEach(y => {
+                                        y.matches.splice(x, 1);
+                                    });
+                                });
+
+                                manipulatedMatches.forEach(x => {
+                                    const index = manipulatedMatches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+
+                                break;
+                            case "2":
+                                indicesToRemove = [];
+
+                                manipulatedMatches = matches.map(x => {
+                                    const oneMatches = x.matches.map(y => {
+                                        if (y == null || y.effects.length != 2) {
+                                            return null;
+                                        }
+                                        else {
+                                            return {
+                                                effects: Array.from(y.effects),
+                                                name: y.name
+                                            }
+                                        }
+                                    });
+
+                                    if (oneMatches.some(x => x != null)) {
+                                        return {
+                                            name: x.name,
+                                            matches: oneMatches
+                                        };
+                                    }
+                                    else {
+                                        indicesToRemove.push(matches.indexOf(x));
+                                        return null;
+                                    }
+                                }).filter(x => x != null);
+
+                                indicesToRemove.reverse().forEach(x => {
+                                    manipulatedMatches.forEach(y => {
+                                        y.matches.splice(x, 1);
+                                    });
+                                });
+
+                                manipulatedMatches.forEach(x => {
+                                    const index = manipulatedMatches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+                                
+                                break;
+                            case "22":
+                                indicesToRemove = [];
+
+                                manipulatedMatches = matches.map(x => {
+                                    const oneMatches = x.matches.map(y => {
+                                        if (y == null || y.effects.length < 2) {
+                                            return null;
+                                        }
+                                        else {
+                                            return {
+                                                effects: Array.from(y.effects),
+                                                name: y.name
+                                            }
+                                        }
+                                    });
+
+                                    if (oneMatches.some(x => x != null)) {
+                                        return {
+                                            name: x.name,
+                                            matches: oneMatches
+                                        };
+                                    }
+                                    else {
+                                        indicesToRemove.push(matches.indexOf(x));
+                                        return null;
+                                    }
+                                }).filter(x => x != null);
+
+                                indicesToRemove.reverse().forEach(x => {
+                                    manipulatedMatches.forEach(y => {
+                                        y.matches.splice(x, 1);
+                                    });
+                                });
+
+                                manipulatedMatches.forEach(x => {
+                                    const index = manipulatedMatches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+
+                                break;
+                            case "3":
+                                indicesToRemove = [];
+
+                                manipulatedMatches = matches.map(x => {
+                                    const oneMatches = x.matches.map(y => {
+                                        if (y == null || y.effects.length != 3) {
+                                            return null;
+                                        }
+                                        else {
+                                            return {
+                                                effects: Array.from(y.effects),
+                                                name: y.name
+                                            }
+                                        }
+                                    });
+
+                                    if (oneMatches.some(x => x != null)) {
+                                        return {
+                                            name: x.name,
+                                            matches: oneMatches
+                                        };
+                                    }
+                                    else {
+                                        indicesToRemove.push(matches.indexOf(x));
+                                        return null;
+                                    }
+                                }).filter(x => x != null);
+
+                                indicesToRemove.reverse().forEach(x => {
+                                    manipulatedMatches.forEach(y => {
+                                        y.matches.splice(x, 1);
+                                    });
+                                });
+
+                                manipulatedMatches.forEach(x => {
+                                    const index = manipulatedMatches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+
+                                break;
+                            case "33":
+                                indicesToRemove = [];
+
+                                manipulatedMatches = matches.map(x => {
+                                    const oneMatches = x.matches.map(y => {
+                                        if (y == null || y.effects.length < 3) {
+                                            return null;
+                                        }
+                                        else {
+                                            return {
+                                                effects: Array.from(y.effects),
+                                                name: y.name
+                                            }
+                                        }
+                                    });
+
+                                    if (oneMatches.some(x => x != null)) {
+                                        return {
+                                            name: x.name,
+                                            matches: oneMatches
+                                        };
+                                    }
+                                    else {
+                                        indicesToRemove.push(matches.indexOf(x));
+                                        return null;
+                                    }
+                                }).filter(x => x != null);
+
+                                indicesToRemove.reverse().forEach(x => {
+                                    manipulatedMatches.forEach(y => {
+                                        y.matches.splice(x, 1);
+                                    });
+                                });
+
+                                manipulatedMatches.forEach(x => {
+                                    const index = manipulatedMatches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+
+                                break;
+                            case "4":
+                                indicesToRemove = [];
+
+                                manipulatedMatches = matches.map(x => {
+                                    const oneMatches = x.matches.map(y => {
+                                        if (y == null || y.effects.length != 4) {
+                                            return null;
+                                        }
+                                        else {
+                                            return {
+                                                effects: Array.from(y.effects),
+                                                name: y.name
+                                            }
+                                        }
+                                    });
+
+                                    if (oneMatches.some(x => x != null)) {
+                                        return {
+                                            name: x.name,
+                                            matches: oneMatches
+                                        };
+                                    }
+                                    else {
+                                        indicesToRemove.push(matches.indexOf(x));
+                                        return null;
+                                    }
+                                }).filter(x => x != null);
+
+                                indicesToRemove.reverse().forEach(x => {
+                                    manipulatedMatches.forEach(y => {
+                                        y.matches.splice(x, 1);
+                                    });
+                                });
+
+                                manipulatedMatches.forEach(x => {
+                                    const index = manipulatedMatches.indexOf(x) + 1;
+                                    const thHeaderRow = document.createElement('th');
+                                    thHeaderRow.classList.add('field', `field-${index}-0`);
+                                    thHeaderRow.textContent = x.name;
+
+                                    matchesTableHeader.appendChild(thHeaderRow)
+
+                                    const tr = document.createElement('tr');
+                                    tr.classList.add('row', `row-${index}`);
+                                    const th = document.createElement('th');
+                                    th.classList.add('field', `field-0-${index}`);
+                                    th.textContent = x.name;
+                                    tr.appendChild(th);
+
+                                    for (let i = 0; i < x.matches.length; i++) {
+                                        const match = x.matches[i];
+                                        const td = document.createElement('td');
+                                        td.classList.add('field', `field-${i + 1}-${index}`);
+                                        let innerHtml = '';
+
+                                        if (match?.effects.length > 0) {
+                                            match.effects.forEach(z => innerHtml += `<p>${z}</p>`);
+                                        }
+
+                                        td.innerHTML = innerHtml;
+                                        tr.appendChild(td);
+                                    }
+
+                                    document.querySelector('#table-matches #body').appendChild(tr);
+                                });
+
+                                document.querySelectorAll('#table-matches .field').forEach(x => x.addEventListener('click', x => {
+                                    document.querySelectorAll('#table-matches td').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+                                    document.querySelectorAll('#table-matches th').forEach(x => x.classList.remove('highlighted', 'highlighted-bright'));
+
+                                    const clickedCell = x.target.closest('td');
+                                    clickedCell.classList.add('highlighted', 'highlighted-bright');
+
+                                    const xIndex = clickedCell.classList[1].split('-')[1];
+                                    const yIndex = clickedCell.classList[1].split('-')[2];
+
+                                    for (let i = xIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${i}-${yIndex}`).classList.add('highlighted');
+                                    }
+
+                                    for (let i = yIndex - 1; i >= 0; i--) {
+                                        document.querySelector(`.field-${xIndex}-${i}`).classList.add('highlighted');
+                                    }
+                                }));
+
+                                break;
+                        }
+                    });
+
+                    let tableCells = document.querySelectorAll('#table-effects td');
+                    let selectedEffects = [];
+
+                    tableCells.forEach(t => t.addEventListener('click', (event) => {
+                        const ctrlClick = event.ctrlKey;
+                        const shiftClick = event.shiftKey;
+                        const allEffects = Array.from(document.querySelectorAll('#table-effects td.effect'));
+                        const clickedEffect = t.classList[0];
+                        const matchingEffects = allEffects.filter(x => x.classList.contains(clickedEffect));
+
+                        const firstEffect = allEffects.find(x => x.classList.contains('highlighted-effect--first'))?.classList[0];
+                        const secondEffect = allEffects.find(x => x.classList.contains('highlighted-effect--second'))?.classList[0];
+                        const thirdEffect = allEffects.find(x => x.classList.contains('highlighted-effect--third'))?.classList[0];
+
+                        //if first, second and third is available, place all three in the array - if only first and second are available, only these and so on - first and third, second and third or only second or third is not possible
+                        selectedEffects = firstEffect
+                            ? secondEffect
+                                ? thirdEffect
+                                    ? [firstEffect, secondEffect, thirdEffect]
+                                    : [firstEffect, secondEffect]
+                                : [firstEffect]
+                            : [];
+
+                        if (ctrlClick) {
+
+                            switch (selectedEffects.length) {
+                                case 0:
+                                    matchingEffects.forEach(x => {
+                                        x.parentNode.classList.add('highlighted-row', 'highlighted-row--first');
+                                        x.classList.add('highlighted-effect', 'highlighted-effect--first');
+                                    });
+                                    break;
+                                case 1:
+                                    if (clickedEffect == selectedEffects[0]) {
+                                        matchingEffects.forEach(x => {
+                                            x.parentNode.classList.remove('highlighted-row', 'highlighted-row--first');
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--first');
+                                        });
+                                    }
+                                    else {
+                                        matchingEffects.forEach(x => {
+                                            x.parentNode.classList.add('highlighted-row', 'highlighted-row--second');
+                                            x.classList.add('highlighted-effect', 'highlighted-effect--second');
+                                        });
+                                    }
+                                    break;
+                                case 2:
+                                    if (clickedEffect == selectedEffects[0]) {
+                                        matchingEffects.forEach(x => {
+                                            x.parentNode.classList.remove('highlighted-row', 'highlighted-row--first');
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--first');
+                                        });
+
+                                        const secondEffects = allEffects.filter(x => x.classList.contains(selectedEffects[1]));
+
+                                        secondEffects.forEach(x => {
+                                            x.parentNode.classList.remove('highlighted-row--second');
+                                            x.parentNode.classList.add('highlighted-row', 'highlighted-row--first');
+                                            x.classList.remove('highlighted-effect--second');
+                                            x.classList.add('highlighted-effect', 'highlighted-effect--first');
+                                        });
+                                    }
+                                    else if (clickedEffect == selectedEffects[1]) {
+                                        matchingEffects.forEach(x => {
+                                            if (x.parentNode.classList.contains('highlighted-row--first')) {
+                                                x.parentNode.classList.remove('highlighted-row--second');
+                                            }
+                                            else {
+                                                x.parentNode.classList.remove('highlighted-row', 'highlighted-row--second');
+                                            }
+
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--second');
+                                        });
+                                    }
+                                    else {
+                                        matchingEffects.forEach(x => {
+                                            x.parentNode.classList.add('highlighted-row', 'highlighted-row--third');
+                                            x.classList.add('highlighted-effect', 'highlighted-effect--third');
+                                        });
+                                    }
+                                    break;
+                                case 3:
+                                    if (clickedEffect == selectedEffects[0]) {
+                                        matchingEffects.forEach(x => {
+                                            if (x.parentNode.classList.contains('highlighted-row--second') || x.parentNode.classList.contains('highlighted-row--third')) {
+                                                x.parentNode.classList.remove('highlighted-row--first');
+                                            }
+                                            else {
+                                                x.parentNode.classList.remove('highlighted-row', 'highlighted-row--first');
+                                            }
+
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--first');
+                                        });
+
+                                        const secondEffects = allEffects.filter(x => x.classList.contains(selectedEffects[1]));
+
+                                        secondEffects.forEach(x => {
+                                            x.parentNode.classList.remove('highlighted-row--second');
+                                            x.parentNode.classList.add('highlighted-row--first');
+
+                                            x.classList.remove('highlighted-effect--second');
+                                            x.classList.add('highlighted-effect--first');
+                                        });
+
+                                        const thirdEffects = allEffects.filter(x => x.classList.contains(selectedEffects[2]));
+
+                                        thirdEffects.forEach(x => {
+                                            x.parentNode.classList.remove('highlighted-row--third');
+                                            x.parentNode.classList.add('highlighted-row--second');
+
+                                            x.classList.remove('highlighted-effect--third');
+                                            x.classList.add('highlighted-effect--second');
+                                        });
+                                    }
+                                    else if (clickedEffect == selectedEffects[1]) {
+                                        matchingEffects.forEach(x => {
+                                            if (x.parentNode.classList.contains('highlighted-row--first') || x.parentNode.classList.contains('highlighted-row--third')) {
+                                                x.parentNode.classList.remove('highlighted-row--second');
+                                            }
+                                            else {
+                                                x.parentNode.classList.remove('highlighted-row', 'highlighted-row--second');
+                                            }
+
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--second');
+                                        });
+
+                                        const thirdEffects = allEffects.filter(x => x.classList.contains(selectedEffects[2]));
+
+                                        thirdEffects.forEach(x => {
+                                            x.parentNode.classList.remove('highlighted-row--third');
+                                            x.parentNode.classList.add('highlighted-row--second');
+
+                                            x.classList.remove('highlighted-effect--third');
+                                            x.classList.add('highlighted-effect--second');
+                                        });
+                                    }
+                                    else if (clickedEffect == selectedEffects[2]) {
+                                        matchingEffects.forEach(x => {
+                                            if (x.parentNode.classList.contains('highlighted-row--first') || x.parentNode.classList.contains('highlighted-row--second')) {
+                                                x.parentNode.classList.remove('highlighted-row--third');
+                                            }
+                                            else {
+                                                x.parentNode.classList.remove('highlighted-row', 'highlighted-row--third');
+                                            }
+
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--third');
+                                        });
+                                    }
+                                    else {
+                                        const thirdEffects = allEffects.filter(x => x.classList.contains(selectedEffects[2]));
+
+                                        thirdEffects.forEach(x => {
+                                            if (x.parentNode.classList.contains('highlighted-row--first') || x.parentNode.classList.contains('highlighted-row--second')) {
+                                                x.parentNode.classList.remove('highlighted-row--third');
+                                            }
+                                            else {
+                                                x.parentNode.classList.remove('highlighted-row', 'highlighted-row--third');
+                                            }
+
+                                            x.classList.remove('highlighted-effect', 'highlighted-effect--third');
+                                        });
+
+                                        matchingEffects.forEach(x => {
+                                            x.parentNode.classList.add('highlighted-row', 'highlighted-row--third');
+                                            x.classList.add('highlighted-effect', 'highlighted-effect--third');
+                                        });
+                                    }
+                                    break;
+                            }
+                        }
+                        else {
+                            const highlightedRows = document.querySelectorAll('#table-effects tr.highlighted-row');
+                            const highlightedEffects = document.querySelectorAll('#table-effects td.highlighted-effect');
+
+                            highlightedRows.forEach(x => x.classList.remove('highlighted-row', 'highlighted-row--first', 'highlighted-row--second', 'highlighted-row--third'));
+                            highlightedEffects.forEach(x => x.classList.remove('highlighted-effect', 'highlighted-effect--first', 'highlighted-effect--second', 'highlighted-effect--third'));
+
+                            if (selectedEffects.length != 1 || selectedEffects[0] != clickedEffect) {
+                                document.querySelectorAll(`#table-effects td.${t.classList[0]}`).forEach(x => x.parentNode.classList.add('highlighted-row', 'highlighted-row--first'));
+                                document.querySelectorAll(`#table-effects td.${t.classList[0]}`).forEach(x => x.classList.add('highlighted-effect', 'highlighted-effect--first'));
+                            }
+                        }
+                    }));
+
+                })
+                .catch(error => {
+                    console.error('Fehler:', error);
+                });
+        }
+
+        // Aufrufen der Funktion mit dem Pfad zur Datei
+        loadAndParseFile('./ingredients.txt');
+    </script>
+</body>
+
+</html>

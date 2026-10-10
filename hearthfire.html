@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyrim Helper - Hearthfire</title>
+    <link rel="stylesheet" href="style/main.css" />
+    <link rel="stylesheet" href="style/hearthfire.css" />
+</head>
+
+<body>
+    <div class="background-image">
+        <div class="overlay"></div>
+        <img src="images/skyrim-helper-background.jpg" alt="Background" />
+    </div>
+
+    <div class="content">
+        <h1>Hearthfire Building Helper</h1>
+
+        <div class="builder-container">
+            <h3>Objekt hinzufügen</h3>
+            <div class="controls">
+                <select id="object-select">
+                    <option value="">-- Objekt/Raum auswählen --</option>
+                </select>
+                <input type="number" id="object-count" value="1" min="1" style="width: 70px;">
+            </div>
+
+            <h3>Ausgewählte Bauprojekte</h3>
+            <ul id="selected-objects-list" class="selected-list">
+                <li style="color: #888;">Noch keine Objekte ausgewählt.</li>
+            </ul>
+
+            <h3>Benötigte Baumaterialien</h3>
+            <div id="materials-container" class="materials-grid">
+                <div class="no-materials">Keine Materialien erforderlich</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let materials = [];
+        let availableObjects = [];
+        let selectedList = [];
+        const collectedAmounts = {};
+
+        const selectEl = document.getElementById('object-select');
+        const countEl = document.getElementById('object-count');
+        const selectedListEl = document.getElementById('selected-objects-list');
+        const materialsContainer = document.getElementById('materials-container');
+
+        function loadData(filePath) {
+            fetch(filePath)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Fehler beim Laden: ${res.statusText}`);
+                    return res.text();
+                })
+                .then(text => {
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    if (lines.length === 0) return;
+
+                    // 1. Erste Zeile verarbeiten (Kopfzeile) -> "Object" überspringen
+                    const headerValues = lines[0].split(',');
+                    materials = headerValues.slice(1)
+                        .map(item => item.replaceAll('\r', '').trim())
+                        .filter(item => item !== '');
+
+                    // 2. Restliche Zeilen verarbeiten (Daten)
+                    const dataLines = lines.slice(1);
+                    dataLines.forEach((line, index) => {
+                        const values = line.split(',');
+                        const name = values[0].replaceAll('\r', '').trim();
+                        
+                        const materialList = values.slice(1).map((val, idx) => ({
+                            name: materials[idx],
+                            amount: parseInt(val.replaceAll('\r', '').trim()) || 0
+                        }));
+
+                        const obj = { id: index, name, materialList };
+                        availableObjects.push(obj);
+
+                        const opt = document.createElement('option');
+                        opt.value = index;
+                        opt.textContent = name;
+                        selectEl.appendChild(opt);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+
+        selectEl.addEventListener('change', () => {
+            const selectedIdx = selectEl.value;
+            const count = parseInt(countEl.value) || 1;
+
+            // Abbrechen, wenn die Platzhalter-Option gewählt wurde
+            if (selectedIdx === "") return;
+
+            const targetObj = availableObjects[selectedIdx];
+            const existing = selectedList.find(item => item.id === targetObj.id);
+
+            if (existing) {
+                existing.count += count;
+            } else {
+                selectedList.push({ ...targetObj, count });
+            }
+
+            // Dropdown auf Standard zurücksetzen, damit dasselbe Objekt bei Bedarf erneut gewählt werden kann
+            selectEl.value = "";
+
+            renderFullUI();
+        });
+
+        function removeItem(id) {
+            selectedList = selectedList.filter(item => item.id !== id);
+            renderFullUI();
+        }
+
+        // Aktualisiert nur das Stylesheet/Aussehen einer einzelnen Karte im DOM
+        function updateCardVisuals(cardEl, collected, totalAmount) {
+            const rawPercent = (collected / totalAmount) * 100;
+            const visualPercent = Math.min(100, Math.max(0, Math.round(rawPercent)));
+            const isCompleted = collected >= totalAmount;
+
+            if (isCompleted) {
+                cardEl.classList.add('completed');
+            } else {
+                cardEl.classList.remove('completed');
+            }
+
+            cardEl.style.background = `linear-gradient(to right, rgba(46, 125, 50, 0.45) ${visualPercent}%, rgba(255, 255, 255, 0.07) ${visualPercent}%)`;
+        }
+
+        function onInputCollected(mName, value, inputEl) {
+            const parsedValue = parseInt(value, 10);
+            const collected = isNaN(parsedValue) ? 0 : Math.max(0, parsedValue);
+            collectedAmounts[mName] = collected;
+
+            // DOM-Knoten der Karte direkt abgreifen und nur Visuals/Progress aktualisieren
+            const cardEl = inputEl.closest('.material-card');
+            if (cardEl) {
+                const totalAmount = parseInt(cardEl.dataset.total, 10);
+                updateCardVisuals(cardEl, collected, totalAmount);
+            }
+        }
+
+        // Baut die Liste komplett neu auf (nur wenn ein Gebäude hinzugefügt/entfernt wird)
+        function renderFullUI() {
+            // 1. Ausgewählte Bauprojekte
+            selectedListEl.innerHTML = '';
+            if (selectedList.length === 0) {
+                selectedListEl.innerHTML = '<li style="color: #888;">Noch keine Objekte ausgewählt.</li>';
+            } else {
+                selectedList.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'selected-item';
+                    li.innerHTML = `
+                        <span><strong>${item.count}x</strong> ${item.name}</span>
+                        <button class="remove-btn" onclick="removeItem(${item.id})">&times;</button>
+                    `;
+                    selectedListEl.appendChild(li);
+                });
+            }
+
+            // 2. Gesamtmengen aufsummieren
+            const totals = {};
+            materials.forEach(m => totals[m] = 0);
+
+            selectedList.forEach(item => {
+                item.materialList.forEach(m => {
+                    if (totals[m.name] !== undefined) {
+                        totals[m.name] += m.amount * item.count;
+                    }
+                });
+            });
+
+            // 3. Grid neu befüllen
+            materialsContainer.innerHTML = '';
+            let hasMaterials = false;
+
+            materials.forEach(mName => {
+                const totalAmount = totals[mName] || 0;
+                if (totalAmount > 0) {
+                    hasMaterials = true;
+                    const collected = collectedAmounts[mName] || 0;
+
+                    const card = document.createElement('div');
+                    card.className = 'material-card';
+                    card.dataset.total = totalAmount; // Speichert benötigte Gesamtmenge an der Karte
+
+                    card.innerHTML = `
+                        <div class="material-card-left">
+                            <span class="material-name">${mName}</span>
+                        </div>
+                        <div class="material-card-right">
+                            <input type="number" class="collected-input" min="0" value="${collected}" 
+                                oninput="onInputCollected('${mName}', this.value, this)">
+                            <span class="material-amount">/ ${totalAmount}</span>
+                        </div>
+                    `;
+
+                    updateCardVisuals(card, collected, totalAmount);
+                    materialsContainer.appendChild(card);
+                }
+            });
+
+            if (!hasMaterials) {
+                materialsContainer.innerHTML = '<div class="no-materials">Keine Materialien erforderlich</div>';
+            }
+        }
+
+        loadData('./hearthfire.txt');
+    </script>
+</body>
+
+</html>
