@@ -1,3 +1,5 @@
+> **Work in Progress:** Dieses Projekt ist noch nicht vollständig abgeschlossen. Es sind aktuell noch nicht alle Bauprojekte aus Skyrim Hearthfire in der Datenbasis enthalten.
+
 # Skyrim Hearthfire Building Helper
 
 Ein einfaches, webbasiertes Hilfstool für *The Elder Scrolls V: Skyrim - Hearthfire*. Es hilft Spielern dabei, den Überblick über benötigte Baumaterialien für verschiedene Bauprojekte und Räume zu behalten.
@@ -13,7 +15,7 @@ Ein einfaches, webbasiertes Hilfstool für *The Elder Scrolls V: Skyrim - Hearth
 
 ## Voraussetzungen & Installation
 
-Da das Tool Daten dynamisch aus einer Textdatei (`hearthfire.txt`) lädt, greifen bei modernen Browsern Sicherheitsbeschränkungen (CORS / Same-Origin-Policy), wenn die `index.html` bzw. `hearthfire.html` direkt als lokale Datei (`file://...`) geöffnet wird.
+Da das Tool Daten dynamisch aus einer Textdatei (`hearthfire.txt`) lädt, greifen bei modernen Browsern Sicherheitsbeschränkungen (CORS / Same-Origin-Policy), wenn die `hearthfire.html` direkt als lokale Datei (`file://...`) geöffnet wird.
 
 **Für die Nutzung ist daher ein lokaler Webserver erforderlich.**
 
